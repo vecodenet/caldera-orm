@@ -1,0 +1,35 @@
+{
+  "name": "vecode/caldera-orm",
+  "description": "ORM implementation, part of Vecode Caldera",
+  "version": "1.0",
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "biohzrdmx",
+      "email": "hi@biohzrdmx.me",
+      "homepage": "https://biohzrdmx.me"
+    }
+  ],
+  "require": {
+    "php": ">=8.1",
+    "ext-mbstring": "*",
+    "vecode/caldera-database": "^1.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "Caldera\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Caldera\\Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "analyse": "phpstan analyse --configuration phpstan.neon --memory-limit 1G --level 7 src",
+    "coverage": "phpunit --coverage-text",
+    "test": "phpunit --testdox"
+  },
+  "minimum-stability": "stable"
+}
