@@ -78,12 +78,14 @@ class TestMySqlAdapter extends MySQLAdapter {
 		$ret = true;
 		$this->query = $query;
 		$this->parameters = $parameters;
-		if ( preg_match('/(COUNT|SUM|MIN|MAX|AVG)/', $query, $matches) === 1 ) {
+		if ( preg_match('/(COUNT|SUM|MIN|MAX|AVG)\(.*\)\s+(?:AS\s+`(.*)`\s+)?FROM\s+(.*)/', $query, $matches) === 1 ) {
 			$ret = [];
 			$keyword = strtolower( $matches[1] );
+			$alias = $matches[2] ?? null;
+			$keyword = $alias ? $alias : $keyword;
 			$ret[$keyword] = 1;
 			$ret = (object) $ret;
-		} else if ( preg_match('/^SELECT `name`, `value` FROM `user_meta`/', $query, $matches) === 1 ) {
+		} else if ( str_starts_with($query, 'SELECT `name`, `value` FROM `user_meta`') ) {
 			$ret = [
 				(object) [
 					'name' => 'foo',
@@ -100,7 +102,7 @@ class TestMySqlAdapter extends MySQLAdapter {
 				'created' => '2022-11-30 15:15:15',
 				'modified' => '2022-11-30 15:15:15',
 			];
-		} else if ( preg_match('/^SELECT \* FROM `order` WHERE `id` > \?/', $query) === 1 ) {
+		} else if ( str_starts_with($query, 'SELECT * FROM `order` WHERE `id` > ?') ) {
 			$id = (int) $parameters[0];
 			if ($id < 50) {
 				$ret = [];
@@ -116,7 +118,7 @@ class TestMySqlAdapter extends MySQLAdapter {
 				$ret = [];
 			}
 			$ret = $ret;
-		} else if ( preg_match('/^SELECT/', $query, $matches) === 1 ) {
+		} else if ( str_starts_with($query, 'SELECT') ) {
 			$ret = [];
 		}
 		if ( $callback ) {
