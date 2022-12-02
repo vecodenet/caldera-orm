@@ -571,14 +571,15 @@ class Query {
 
 	/**
 	 * Dump current query
+	 * @param  bool  $html Output with HTML tags
 	 * @return $this
 	 */
-	public function dump() {
+	public function dump(bool $html = false) {
 		$compiled = $this->builder->build($this->blueprint);
 		$console = php_sapi_name() == 'cli';
 		$params = var_export($compiled->getParameters(), true);
 		$output = sprintf('%s%s%s', $compiled->getCode(), $console ? "\n" : '<br>', $params);
-		if (! $console ) {
+		if ( !$console || $html ) {
 			$output = sprintf('<pre>%s</pre>', $output);
 		}
 		echo $output;

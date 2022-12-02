@@ -3,8 +3,8 @@
 declare(strict_types = 1);
 
 /**
- * Caldera Database
- * Database abstraction layer, part of Vecode Caldera
+ * Caldera ORM
+ * ORM implementation, part of Vecode Caldera
  * @author  biohzrdmx <github.com/biohzrdmx>
  * @copyright Copyright (c) 2022 Vecode. All rights reserved
  */
@@ -13,12 +13,15 @@ namespace Caldera\Tests\Database\Query;
 
 use PHPUnit\Framework\TestCase;
 
+use PDOStatement;
+
 use Caldera\Database\Database;
 use Caldera\Database\Query\Argument;
 use Caldera\Database\Query\Blueprint;
 use Caldera\Database\Query\Fragment;
 use Caldera\Database\Query\Query;
 use Caldera\Database\Query\QueryFactory;
+use Caldera\Tests\Database\TestModel;
 use Caldera\Tests\Database\TestMySqlAdapter;
 
 class QueryWithMysqlAdapterTest extends TestCase {
@@ -36,9 +39,14 @@ class QueryWithMysqlAdapterTest extends TestCase {
 	protected static $database;
 
 	protected function setUp(): void {
-		# Create database
-		$options = [];
-		self::$adapter = new TestMySqlAdapter($options);
+		/**
+		 * PDOStatement mock
+		 * @var Stub
+		 */
+		$mock = self::createStub(PDOStatement::class);
+		$mock->method('fetchAll')->willReturn([]);
+		$mock->method('fetch')->willReturn((object)[]);
+		self::$adapter = new TestMySqlAdapter($mock);
 		self::$database = new Database(self::$adapter);
 		QueryFactory::setDatabase(self::$database);
 	}
@@ -164,6 +172,19 @@ class QueryWithMysqlAdapterTest extends TestCase {
 			->all();
 		$this->assertEquals( "SELECT `id`, SUM(`total`) AS `total`, SUM(`items`) AS `items` FROM `order` GROUP BY `id` HAVING `total` > ? AND `total` > `items`", self::$adapter->getQuery() );
 		$this->assertEquals( [1000], self::$adapter->getParameters() );
+		#
+		$query = new Query(self::$database);
+		$query->table('order')
+			->column('id')
+			->column(Argument::method('SUM', 'total'), 'total')
+			->column(Argument::raw('SUM(`items`)'), 'items')
+			->group('id')
+			->having(function($query) {
+				$query->having('total', 1000, '>')->havingColumn('total', 'items', '>');
+			})
+			->all();
+		$this->assertEquals( "SELECT `id`, SUM(`total`) AS `total`, SUM(`items`) AS `items` FROM `order` GROUP BY `id` HAVING (`total` > ? AND `total` > `items`)", self::$adapter->getQuery() );
+		$this->assertEquals( [1000], self::$adapter->getParameters() );
 	}
 
 	public function testSelectWithUnion() {
@@ -191,6 +212,23 @@ class QueryWithMysqlAdapterTest extends TestCase {
 			->all();
 		$this->assertEquals( "SELECT * FROM `user` AS `u` INNER JOIN `user_meta` ON `id_user` = `u`.`id` WHERE `u`.`id` = ?", self::$adapter->getQuery() );
 		$this->assertEquals( [1], self::$adapter->getParameters() );
+		#
+		$query = new Query(self::$database);
+		$query->table('user', 'u')
+			->join(Argument::table('user_meta', 'um'), function($query) {
+				$query->where(Argument::column('um.id_user'), Argument::column('t.id'));
+				$query->where(Argument::column('um.name'), 'comment');
+			})
+			->where('u.id', 1)
+			->all();
+		$this->assertEquals( "SELECT * FROM `user` AS `u` INNER JOIN `user_meta` AS `um` ON `um`.`id_user` = `t`.`id` AND `um`.`name` = ? WHERE `u`.`id` = ?", self::$adapter->getQuery() );
+		$this->assertEquals( ['comment', 1], self::$adapter->getParameters() );
+	}
+
+	public function testSelectWithModel() {
+		$query = new Query(self::$database);
+		$query->table('user')->setModel(TestModel::class)->first();
+		$this->assertEquals( "SELECT * FROM `user`", self::$adapter->getQuery() );
 	}
 
 	public function testScalarCount() {
@@ -257,6 +295,10 @@ class QueryWithMysqlAdapterTest extends TestCase {
 			"  3 => 7,\n".
 			')';
 		$this->assertEquals( $check, $output );
+		#
+		ob_start();
+		$query->dump(true);
+		$output = ob_get_clean();
 	}
 
 	public function testToString() {
@@ -265,5 +307,73 @@ class QueryWithMysqlAdapterTest extends TestCase {
 			->whereNotIn('id', [1, 3, 5, 7])
 			->page(1, 15);
 		$this->assertEquals( 'SELECT * FROM `user` AS `u` WHERE `id` NOT IN (?, ?, ?, ?) LIMIT 0, 15', (string) $query );
+	}
+
+	public function testInsert() {
+		$query = new Query(self::$database);
+		$query->table('user')->insert([
+			'id' => 0,
+			'name' => 'Test',
+			'email' => 'test@example.com',
+			'status' => 'Active',
+			'created' => Argument::method('NOW'),
+		]);
+		$this->assertEquals( 'INSERT INTO `user` (`id`, `name`, `email`, `status`, `created`) VALUES (?, ?, ?, ?, NOW())', self::$adapter->getQuery() );
+		$this->assertEquals( [0, 'Test', 'test@example.com', 'Active'], self::$adapter->getParameters() );
+		#
+		$query = new Query(self::$database);
+		$query->table('user')->insert([
+			[
+				'id' => 0,
+				'name' => 'Test',
+				'email' => 'test@example.com',
+				'status' => 'Active',
+				'created' => Argument::method('NOW'),
+			], [
+				'id' => 0,
+				'name' => 'Another',
+				'email' => 'another@example.com',
+				'status' => 'Active',
+				'created' => Argument::method('NOW'),
+			]
+		]);
+		$this->assertEquals( 'INSERT INTO `user` (`id`, `name`, `email`, `status`, `created`) VALUES (?, ?, ?, ?, NOW()), (?, ?, ?, ?, NOW())', self::$adapter->getQuery() );
+		$this->assertEquals( [0, 'Test', 'test@example.com', 'Active', 0, 'Another', 'another@example.com', 'Active'], self::$adapter->getParameters() );
+	}
+
+	public function testUpdate() {
+		$query = new Query(self::$database);
+		$query->table('user')->where('id', 123)->update([
+			'name' => 'Test',
+			'email' => 'test@example.com',
+			'status' => 'Active',
+			'modified' => Argument::method('NOW'),
+		]);
+		$this->assertEquals( 'UPDATE `user` SET `name` = ?, `email` = ?, `status` = ?, `modified` = NOW() WHERE `id` = ?', self::$adapter->getQuery() );
+		$this->assertEquals( ['Test', 'test@example.com', 'Active', 123], self::$adapter->getParameters() );
+	}
+
+	public function testUpsert() {
+		$query = new Query(self::$database);
+		$query->table('user')->upsert([
+			'id' => 0,
+			'name' => 'Test',
+			'email' => 'test@example.com',
+			'status' => 'Active',
+			'created' => Argument::method('NOW'),
+		], [
+			'name' => Argument::column('row.name'),
+			'email' => Argument::column('row.email'),
+			'modified' => Argument::method('NOW'),
+		]);
+		$this->assertEquals( 'INSERT INTO `user` (`id`, `name`, `email`, `status`, `created`) VALUES (?, ?, ?, ?, NOW()) AS `row` ON DUPLICATE KEY UPDATE `name` = `row`.`name`, `email` = `row`.`email`, `modified` = NOW()', self::$adapter->getQuery() );
+		$this->assertEquals( [0, 'Test', 'test@example.com', 'Active'], self::$adapter->getParameters() );
+	}
+
+	public function testDelete() {
+		$query = new Query(self::$database);
+		$query->table('user')->where('id', 123)->delete();
+		$this->assertEquals( 'DELETE FROM `user` WHERE `id` = ?', self::$adapter->getQuery() );
+		$this->assertEquals( [123], self::$adapter->getParameters() );
 	}
 }

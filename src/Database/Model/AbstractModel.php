@@ -417,7 +417,6 @@ abstract class AbstractModel implements JsonSerializable {
 			$ref = static::$field_primary;
 			$item = $query->where(static::$field_primary, $this->$ref)->first();
 			if ($item) {
-				$fields = static::$fields;
 				foreach (static::$fields as $field) {
 					$this->$field = $item->$field;
 				}

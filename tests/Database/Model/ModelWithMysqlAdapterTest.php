@@ -3,8 +3,8 @@
 declare(strict_types = 1);
 
 /**
- * Caldera Database
- * Database abstraction layer, part of Vecode Caldera
+ * Caldera ORM
+ * ORM implementation, part of Vecode Caldera
  * @author  biohzrdmx <github.com/biohzrdmx>
  * @copyright Copyright (c) 2022 Vecode. All rights reserved
  */
@@ -12,6 +12,8 @@ declare(strict_types = 1);
 namespace Caldera\Tests\Database\Model;
 
 use PHPUnit\Framework\TestCase;
+
+use PDOStatement;
 
 use Caldera\Database\Database;
 use Caldera\Database\Query\QueryFactory;
@@ -33,9 +35,14 @@ class ModelWithMysqlAdapterTest extends TestCase {
 	protected static $database;
 
 	protected function setUp(): void {
-		# Create database
-		$options = [];
-		self::$adapter = new TestMySqlAdapter($options);
+		/**
+		 * PDOStatement mock
+		 * @var Stub
+		 */
+		$mock = self::createStub(PDOStatement::class);
+		$mock->method('fetchAll')->willReturn([]);
+		$mock->method('fetch')->willReturn((object)[]);
+		self::$adapter = new TestMySqlAdapter($mock);
 		self::$database = new Database(self::$adapter);
 		QueryFactory::setDatabase(self::$database);
 	}

@@ -3,8 +3,8 @@
 declare(strict_types = 1);
 
 /**
- * Caldera Database
- * Database abstraction layer, part of Vecode Caldera
+ * Caldera ORM
+ * ORM implementation, part of Vecode Caldera
  * @author  biohzrdmx <github.com/biohzrdmx>
  * @copyright Copyright (c) 2022 Vecode. All rights reserved
  */
@@ -28,6 +28,20 @@ class TestMySqlAdapter extends MySQLAdapter {
 	 * @var array
 	 */
 	protected $parameters = [];
+
+	/**
+	 * PDOStatement mock
+	 * @var mixed
+	 */
+	protected $stmt_mock;
+
+	/**
+	 * Constructor
+	 * @param mixed $stmt_mock PDOStatement mock
+	 */
+	public function __construct($stmt_mock) {
+		$this->stmt_mock = $stmt_mock;
+	}
 
 	/**
 	 * Get executed query
@@ -61,13 +75,14 @@ class TestMySqlAdapter extends MySQLAdapter {
 	 * @return mixed
 	 */
 	public function query(string $query, array $parameters = [], Closure $callback = null) {
+		$ret = true;
 		$this->query = $query;
 		$this->parameters = $parameters;
 		if ( preg_match('/(COUNT|SUM|MIN|MAX|AVG)/', $query, $matches) === 1 ) {
 			$ret = [];
 			$keyword = strtolower( $matches[1] );
 			$ret[$keyword] = 1;
-			return (object) $ret;
+			$ret = (object) $ret;
 		} else if ( preg_match('/^SELECT `name`, `value` FROM `user_meta`/', $query, $matches) === 1 ) {
 			$ret = [
 				(object) [
@@ -75,9 +90,9 @@ class TestMySqlAdapter extends MySQLAdapter {
 					'value' => 'bar',
 				]
 			];
-			return $ret;
+			$ret = $ret;
 		} else if ( $query == 'SELECT * FROM `user` WHERE `id` = ?' && ($parameters[0] ?? null) == 123 ) {
-			return (object) [
+			$ret = (object) [
 				'id' => 123,
 				'name' => 'Test',
 				'email' => 'test@example.com',
@@ -100,11 +115,14 @@ class TestMySqlAdapter extends MySQLAdapter {
 			} else {
 				$ret = [];
 			}
-			return $ret;
+			$ret = $ret;
 		} else if ( preg_match('/^SELECT/', $query, $matches) === 1 ) {
-			return [];
+			$ret = [];
 		}
-		return true;
+		if ( $callback ) {
+			call_user_func($callback, $this->stmt_mock);
+		}
+		return $ret;
 	}
 
 	/**
