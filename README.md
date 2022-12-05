@@ -6,6 +6,6 @@
 
 # caldera-orm
 
-ORM implementation, part of Vecode Caldera
+Query builder and ORM layer, part of Vecode Caldera
 
 Copyright &copy; 2022 Vecode. All Rights Reserved.

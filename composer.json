@@ -1,6 +1,6 @@
 {
   "name": "vecode/caldera-orm",
-  "description": "ORM implementation, part of Vecode Caldera",
+  "description": "Query builder and ORM layer, part of Vecode Caldera",
   "version": "1.0",
   "type": "library",
   "license": "MIT",

@@ -4,20 +4,16 @@ declare(strict_types = 1);
 
 /**
  * Caldera ORM
- * ORM implementation, part of Vecode Caldera
+ * Query builder and ORM layer, part of Vecode Caldera
  * @author  biohzrdmx <github.com/biohzrdmx>
  * @copyright Copyright (c) 2022 Vecode. All rights reserved
  */
 
 namespace Caldera\Database\Query\Builder;
 
-use Closure;
-
-use Caldera\Database\Query\Builder\AbstractBuilder;
 use Caldera\Database\Query\CompiledQuery;
 use Caldera\Database\Query\Blueprint;
 use Caldera\Database\Query\Argument;
-use Caldera\Database\Query\QueryFactory;
 
 class SQLiteBuilder extends MySQLBuilder {
 
