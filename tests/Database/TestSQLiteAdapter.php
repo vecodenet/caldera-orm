@@ -13,9 +13,9 @@ namespace Caldera\Tests\Database;
 
 use Closure;
 
-use Caldera\Database\Adapter\MySQLAdapter;
+use Caldera\Database\Adapter\SQLiteAdapter;
 
-class TestMySQLAdapter extends MySQLAdapter {
+class TestSQLiteAdapter extends SQLiteAdapter {
 
 	/**
 	 * Executed query

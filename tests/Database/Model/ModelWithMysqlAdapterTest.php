@@ -18,13 +18,13 @@ use PDOStatement;
 use Caldera\Database\Database;
 use Caldera\Database\Query\QueryFactory;
 use Caldera\Tests\Database\TestModel;
-use Caldera\Tests\Database\TestMySqlAdapter;
+use Caldera\Tests\Database\TestMySQLAdapter;
 
 class ModelWithMysqlAdapterTest extends TestCase {
 
 	/**
 	 * Database adapter instance
-	 * @var TestMySqlAdapter
+	 * @var TestMySQLAdapter
 	 */
 	protected static $adapter;
 
@@ -42,7 +42,7 @@ class ModelWithMysqlAdapterTest extends TestCase {
 		$mock = self::createStub(PDOStatement::class);
 		$mock->method('fetchAll')->willReturn([]);
 		$mock->method('fetch')->willReturn((object)[]);
-		self::$adapter = new TestMySqlAdapter($mock);
+		self::$adapter = new TestMySQLAdapter($mock);
 		self::$database = new Database(self::$adapter);
 		QueryFactory::setDatabase(self::$database);
 	}
@@ -113,7 +113,7 @@ class ModelWithMysqlAdapterTest extends TestCase {
 	}
 
 	public function testChunk() {
-		TestModel::chunk(function(array $items) {}, 10);
+		TestModel::chunk(10, function(array $items) {});
 		$this->assertEquals( 'SELECT * FROM `user` WHERE `id` > ? LIMIT 10', self::$adapter->getQuery() );
 	}
 

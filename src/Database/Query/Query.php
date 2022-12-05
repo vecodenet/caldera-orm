@@ -442,12 +442,14 @@ class Query {
 	 * Upsert rows
 	 * @param  array  $insert Data to insert
 	 * @param  array  $update Data to update on index collision
+	 * @param  array  $index  Which columns to use to detect collisions
 	 * @return $this
 	 */
-	public function upsert(array $insert, array $update) {
+	public function upsert(array $insert, array $update, array $index = []) {
 		$data = [
 			'insert' => $insert,
-			'update' => $update
+			'update' => $update,
+			'index' => $index
 		];
 		$fragment = new Fragment($data);
 		$this->blueprint->addFragment('insert', $fragment);
@@ -536,12 +538,12 @@ class Query {
 
 	/**
 	 * Chunk query
-	 * @param  Closure $callback Callback function
 	 * @param  int     $size     Chunk size
+	 * @param  Closure $callback Callback function
 	 * @param  string  $id       Index field
 	 * @return $this
 	 */
-	public function chunk(Closure $callback, int $size, $id = 'id') {
+	public function chunk(int $size, Closure $callback, $id = 'id') {
 		$chunk = 1;
 		$last_id = 0;
 		do {

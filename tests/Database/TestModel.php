@@ -11,9 +11,6 @@ declare(strict_types = 1);
 
 namespace Caldera\Tests\Database;
 
-use Closure;
-
-use Caldera\Database\Adapter\MySQLAdapter;
 use Caldera\Database\Model\AbstractMetaModel;
 
 class TestModel extends AbstractMetaModel {

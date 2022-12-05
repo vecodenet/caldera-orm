@@ -274,12 +274,12 @@ abstract class AbstractModel implements JsonSerializable {
 
 	/**
 	 * Get chunked rows
-	 * @param  Closure $callback Callback function
 	 * @param  int     $size     Chunk size
+	 * @param  Closure $callback Callback function
 	 * @return mixed
 	 */
-	public static function chunk(Closure $callback, int $size) {
-		self::query()->chunk($callback, $size, static::$field_primary);
+	public static function chunk(int $size, Closure $callback) {
+		self::query()->chunk($size, $callback, static::$field_primary);
 	}
 
 	/**

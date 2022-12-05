@@ -17,7 +17,6 @@ use Caldera\Database\Query\Builder\AbstractBuilder;
 use Caldera\Database\Query\CompiledQuery;
 use Caldera\Database\Query\Blueprint;
 use Caldera\Database\Query\Argument;
-use Caldera\Database\Query\Query;
 use Caldera\Database\Query\QueryFactory;
 
 class MySQLBuilder extends AbstractBuilder {

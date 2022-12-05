@@ -20,13 +20,13 @@ use Caldera\Database\Query\Argument;
 use Caldera\Database\Query\Query;
 use Caldera\Database\Query\QueryFactory;
 use Caldera\Tests\Database\TestModel;
-use Caldera\Tests\Database\TestMySQLAdapter;
+use Caldera\Tests\Database\TestSQLiteAdapter;
 
-class QueryWithMysqlAdapterTest extends TestCase {
+class QueryWithSqliteAdapterTest extends TestCase {
 
 	/**
 	 * Database adapter instance
-	 * @var TestMySQLAdapter
+	 * @var TestSQLiteAdapter
 	 */
 	protected static $adapter;
 
@@ -44,7 +44,7 @@ class QueryWithMysqlAdapterTest extends TestCase {
 		$mock = self::createStub(PDOStatement::class);
 		$mock->method('fetchAll')->willReturn([]);
 		$mock->method('fetch')->willReturn((object)[]);
-		self::$adapter = new TestMySQLAdapter($mock);
+		self::$adapter = new TestSQLiteAdapter($mock);
 		self::$database = new Database(self::$adapter);
 		QueryFactory::setDatabase(self::$database);
 	}
@@ -204,7 +204,7 @@ class QueryWithMysqlAdapterTest extends TestCase {
 	public function testTruncate() {
 		$query = new Query(self::$database);
 		$query->table('order')->truncate();
-		$this->assertEquals( "TRUNCATE `order`", self::$adapter->getQuery() );
+		$this->assertEquals( "DELETE FROM `order`", self::$adapter->getQuery() );
 	}
 
 	public function testChunk() {
@@ -302,12 +302,11 @@ class QueryWithMysqlAdapterTest extends TestCase {
 			'status' => 'Active',
 			'created' => Argument::method('NOW'),
 		], [
-			'name' => Argument::column('row.name'),
-			'email' => Argument::column('row.email'),
+			'name' => 'Test',
 			'modified' => Argument::method('NOW'),
-		]);
-		$this->assertEquals( 'INSERT INTO `user` (`id`, `name`, `email`, `status`, `created`) VALUES (?, ?, ?, ?, NOW()) AS `row` ON DUPLICATE KEY UPDATE `name` = `row`.`name`, `email` = `row`.`email`, `modified` = NOW()', self::$adapter->getQuery() );
-		$this->assertEquals( [0, 'Test', 'test@example.com', 'Active'], self::$adapter->getParameters() );
+		], ['email']);
+		$this->assertEquals( 'INSERT INTO `user` (`id`, `name`, `email`, `status`, `created`) VALUES (?, ?, ?, ?, NOW()) ON CONFLICT (`email`) DO UPDATE SET `name` = ?, `modified` = NOW()', self::$adapter->getQuery() );
+		$this->assertEquals( [0, 'Test', 'test@example.com', 'Active', 'Test'], self::$adapter->getParameters() );
 	}
 
 	public function testDelete() {
