@@ -78,7 +78,7 @@ abstract class AbstractMetaModel extends AbstractModel {
 	 * @return void
 	 */
 	function setMetadata($name = null, $value = ''): void {
-		$single = !is_array($name) && $value;
+		$single = !is_array($name) && $value !== null;
 		$ref = static::$field_primary;
 		if ($single) {
 			if ( is_array($value) || is_object($value) ) {

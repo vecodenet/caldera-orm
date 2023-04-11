@@ -179,6 +179,9 @@ class ModelWithMysqlAdapterTest extends TestCase {
 		$test->setMetadata('foo', 'bar');
 		$this->assertEquals( 'INSERT INTO `user_meta` (`id`, `user_id`, `name`, `value`) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE `value` = ?', self::$adapter->getQuery() );
 		$this->assertEquals( [0, 123, 'foo', 'bar', 'bar'], self::$adapter->getParameters() );
+		$test->setMetadata('foo', '');
+		$this->assertEquals( 'INSERT INTO `user_meta` (`id`, `user_id`, `name`, `value`) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE `value` = ?', self::$adapter->getQuery() );
+		$this->assertEquals( [0, 123, 'foo', '', ''], self::$adapter->getParameters() );
 		# Set metadata, array
 		$test->setMetadata('foo', ['bar', 'baz']);
 		$this->assertEquals( [0, 123, 'foo', 'a:2:{i:0;s:3:"bar";i:1;s:3:"baz";}', 'a:2:{i:0;s:3:"bar";i:1;s:3:"baz";}'], self::$adapter->getParameters() );
