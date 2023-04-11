@@ -55,6 +55,16 @@ class ModelWithMysqlAdapterTest extends TestCase {
 		$this->assertEquals(['id', 'name', 'email', 'status', 'created', 'modified'], $user->getFields());
 	}
 
+	public function testGetAndSetProperties() {
+		$user = new TestModel();
+		$this->assertFalse( $user->hasProperty('foo') );
+		$this->assertNull( $user->getProperty('foo') );
+		$this->assertEquals( 'bar', $user->getProperty('foo', 'bar') );
+		$user->setProperty('bar', 'baz');
+		$this->assertTrue( $user->hasProperty('bar') );
+		$this->assertEquals( 'baz', $user->getProperty('bar') );
+	}
+
 	public function testSelect() {
 		# First
 		TestModel::first();

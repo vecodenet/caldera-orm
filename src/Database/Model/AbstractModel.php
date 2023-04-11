@@ -487,12 +487,40 @@ abstract class AbstractModel implements JsonSerializable {
 	}
 
 	/**
+	 * Check if the specified property is set
+	 * @param  string  $name Property name
+	 * @return bool
+	 */
+	public function hasProperty(string $name): bool {
+		return isset( $this->properties[$name] );
+	}
+
+	/**
+	 * Get the specified property
+	 * @param  string $name    Property name
+	 * @param  mixed  $default Default value
+	 * @return mixed
+	 */
+	public function getProperty(string $name, mixed $default = null): mixed {
+		return $this->properties[$name] ?? $default;
+	}
+
+	/**
+	 * Set the specified property
+	 * @param string $name  Property name
+	 * @param mixed  $value Property value
+	 */
+	public function setProperty(string $name, mixed $value): void {
+		$this->properties[$name] = $value;
+	}
+
+	/**
 	 * Get property
 	 * @param  string $name Property name
 	 * @return mixed
 	 */
 	public function __get(string $name): mixed {
-		return $this->properties[$name] ?? null;
+		return $this->getProperty($name);
 	}
 
 	/**
@@ -502,6 +530,6 @@ abstract class AbstractModel implements JsonSerializable {
 	 * @return void
 	 */
 	public function __set(string $name, mixed $value): void {
-		$this->properties[$name] = $value;
+		$this->setProperty($name, $value);
 	}
 }
