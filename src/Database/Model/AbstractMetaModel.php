@@ -52,7 +52,8 @@ abstract class AbstractMetaModel extends AbstractModel {
 				->where('name', $name)
 				->first();
 			if ($row) {
-				$ret = @unserialize($row->value) ?: $row->value;
+				$unserialized = @unserialize($row->value);
+				$ret = $unserialized !== false ? $unserialized : $row->value;
 			}
 		} else {
 			$rows = QueryFactory::build(static::$meta_table)
@@ -64,7 +65,8 @@ abstract class AbstractMetaModel extends AbstractModel {
 			if ($rows) {
 				$this->metadata = [];
 				foreach ($rows as $row) {
-					$this->metadata[$row->name] = @unserialize($row->value) ?: $row->value;
+					$unserialized = @unserialize($row->value);
+					$this->metadata[$row->name] = $unserialized !== false ? $unserialized : $row->value;
 				}
 			}
 		}
