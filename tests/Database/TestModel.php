@@ -11,9 +11,22 @@ declare(strict_types = 1);
 
 namespace Caldera\Tests\Database;
 
+use DateTime;
+
 use Caldera\Database\Model\AbstractMetaModel;
 
+/**
+ * @property int $id
+ * @property string $name
+ * @property string $email
+ * @property string $password
+ * @property string $status
+ * @property DateTime $created
+ * @property DateTime $modified
+ */
 class TestModel extends AbstractMetaModel {
+
+    use HasTimestamps, HasPassword;
 
 	protected static $table  = 'user';
 
@@ -23,6 +36,7 @@ class TestModel extends AbstractMetaModel {
 		'id',
 		'name',
 		'email',
+		'password',
 		'status',
 		'created',
 		'modified',
@@ -31,12 +45,13 @@ class TestModel extends AbstractMetaModel {
 	protected static $update = [
 		'name',
 		'email',
+		'password',
 		'status',
 		'modified',
 	];
 
 	protected static $defaults = [
-		'status' => 'Inactive'
+		'status' => 'Inactive',
 	];
 
 	protected static $meta_table = 'user_meta';

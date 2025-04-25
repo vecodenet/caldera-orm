@@ -98,6 +98,7 @@ class TestSQLiteAdapter extends SQLiteAdapter {
 				'id' => 123,
 				'name' => 'Test',
 				'email' => 'test@example.com',
+				'password' => '$2y$10$PASmbaPEwpEijuWXl6MiVe2gZDQoqB9JXpfqgU.2fR8i58xrijx3a',
 				'status' => 'Active',
 				'created' => '2022-11-30 15:15:15',
 				'modified' => '2022-11-30 15:15:15',

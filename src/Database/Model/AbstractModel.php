@@ -73,6 +73,11 @@ abstract class AbstractModel implements JsonSerializable {
 	 */
 	protected $properties = [];
 
+    /**
+     * @var array<string, Mutator>
+     */
+    protected $mutators = [];
+
 	/**
 	 * Constructor
 	 * @param Query $query Query object
@@ -93,7 +98,7 @@ abstract class AbstractModel implements JsonSerializable {
 							$value = isset( static::$defaults[$field] ) ? static::$defaults[$field] : '';
 						break;
 					}
-					$this->$field = $value;
+					$this->properties[$field] = $value;
 				}
 			}
 		}
@@ -298,7 +303,7 @@ abstract class AbstractModel implements JsonSerializable {
 	public function save(): void {
 		$query = static::query();
 		$ref = static::$field_primary;
-		if ($this->$ref == 0) {
+		if ($this->properties[$ref] == 0) {
 			$this->saveProc($query);
 		} else {
 			$this->updateProc($query);
@@ -312,7 +317,7 @@ abstract class AbstractModel implements JsonSerializable {
 	public function refresh(): void {
 		$query = static::query();
 		$ref = static::$field_primary;
-		if ($this->$ref > 0) {
+		if ($this->properties[$ref] > 0) {
 			$this->refreshProc($query);
 		}
 	}
@@ -342,22 +347,22 @@ abstract class AbstractModel implements JsonSerializable {
 	protected function saveProc(Query $query): void {
 		# Touch timestamp
 		$ref = static::$field_created;
-		$this->$ref = date('Y-m-d H:i:s');
+		$this->properties[$ref] = date('Y-m-d H:i:s');
 		# Callback before
 		$continue = $this->beforeSave();
 		if ($continue !== false) {
 			# Add fields
 			$fields = [];
 			foreach (static::$fields as $field) {
-				$fields[$field] = $this->$field;
+				$fields[$field] = $this->properties[$field];
 			}
 			# Insert row
 			$id = $query->insert($fields);
 			# Update primary field
 			$ref = static::$field_primary;
-			$this->$ref = $id;
+			$this->properties[$ref] = $id;
 			# Callback after
-			if ($this->$ref > 0) {
+			if ($this->properties[$ref] > 0) {
 				$this->afterSave();
 			}
 		}
@@ -371,18 +376,18 @@ abstract class AbstractModel implements JsonSerializable {
 	protected function updateProc(Query $query): void {
 		# Touch timestamp
 		$ref = static::$field_updated;
-		$this->$ref = date('Y-m-d H:i:s');
+		$this->properties[$ref] = date('Y-m-d H:i:s');
 		# Callback before
 		$continue = $this->beforeSave();
 		if ($continue !== false) {
 			# Add fields
 			$fields = [];
 			foreach (static::$update as $field) {
-				$fields[$field] = $this->$field;
+				$fields[$field] = $this->properties[$field];
 			}
 			# Update row
 			$ref = static::$field_primary;
-			$query->where(static::$field_primary, $this->$ref)->update($fields);
+			$query->where(static::$field_primary, $this->properties[$ref])->update($fields);
 			# Callback after
 			$this->afterSave();
 		}
@@ -398,7 +403,7 @@ abstract class AbstractModel implements JsonSerializable {
 		$continue = $this->beforeDelete();
 		if ($continue !== false) {
 			$ref = static::$field_primary;
-			$query->where(static::$field_primary, $this->$ref)->limit(1)->delete();
+			$query->where(static::$field_primary, $this->properties[$ref])->limit(1)->delete();
 			# Callback after
 			$this->afterDelete();
 		}
@@ -415,10 +420,10 @@ abstract class AbstractModel implements JsonSerializable {
 		if ($continue !== false) {
 			# Fetch by primary key
 			$ref = static::$field_primary;
-			$item = $query->where(static::$field_primary, $this->$ref)->first();
+			$item = $query->where(static::$field_primary, $this->properties[$ref])->first();
 			if ($item) {
 				foreach (static::$fields as $field) {
-					$this->$field = $item->$field;
+					$this->properties[$field] = $item->$field;
 				}
 			}
 			# Callback after
@@ -502,6 +507,10 @@ abstract class AbstractModel implements JsonSerializable {
 	 * @return mixed
 	 */
 	public function getProperty(string $name, mixed $default = null): mixed {
+        $mutator = $this->checkMutator($name);
+        if ($mutator) {
+            return $mutator->get();
+        }
 		return $this->properties[$name] ?? $default;
 	}
 
@@ -511,7 +520,12 @@ abstract class AbstractModel implements JsonSerializable {
 	 * @param mixed  $value Property value
 	 */
 	public function setProperty(string $name, mixed $value): void {
-		$this->properties[$name] = $value;
+        $mutator = $this->checkMutator($name);
+        if ($mutator) {
+            $this->properties[$name] = $mutator->set($value);
+        } else {
+		    $this->properties[$name] = $value;
+        }
 	}
 
 	/**
@@ -532,4 +546,20 @@ abstract class AbstractModel implements JsonSerializable {
 	public function __set(string $name, mixed $value): void {
 		$this->setProperty($name, $value);
 	}
+
+    /**
+     * Check if a mutator exists for a given property and return it
+     * @param  string $property
+     * @return Mutator|null
+     */
+    protected function checkMutator(string $property): ?Mutator {
+        $mutator = $this->mutators[$property] ?? null;
+        if (!$mutator && method_exists($this, $property) ) {
+            $mutator = call_user_func([$this, $property]); # @phpstan-ignore-line
+            if ($mutator instanceof Mutator) {
+                $this->mutators[$property] = $mutator;
+            }
+        }
+        return $mutator;
+    }
 }

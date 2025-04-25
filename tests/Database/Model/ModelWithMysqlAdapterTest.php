@@ -11,9 +11,12 @@ declare(strict_types = 1);
 
 namespace Caldera\Tests\Database\Model;
 
-use PHPUnit\Framework\TestCase;
-
+use DateTime;
+use RuntimeException;
 use PDOStatement;
+
+use PHPUnit\Framework\MockObject\Stub;
+use PHPUnit\Framework\TestCase;
 
 use Caldera\Database\Database;
 use Caldera\Database\Query\QueryFactory;
@@ -52,7 +55,7 @@ class ModelWithMysqlAdapterTest extends TestCase {
 		$this->assertEquals(0, $user->id);
 		$this->assertEquals('Inactive', $user->status);
 		$this->assertEquals('user', $user->getTable());
-		$this->assertEquals(['id', 'name', 'email', 'status', 'created', 'modified'], $user->getFields());
+		$this->assertEquals(['id', 'name', 'email', 'password', 'status', 'created', 'modified'], $user->getFields());
 	}
 
 	public function testGetAndSetProperties() {
@@ -63,6 +66,14 @@ class ModelWithMysqlAdapterTest extends TestCase {
 		$user->setProperty('bar', 'baz');
 		$this->assertTrue( $user->hasProperty('bar') );
 		$this->assertEquals( 'baz', $user->getProperty('bar') );
+        # Test mutators
+        $this->assertInstanceOf(DateTime::class, $user->created);
+        $user->created = new DateTime('2000-01-01');
+        $this->assertEquals(new DateTime('2000-01-01'), $user->created);
+        $user->modified = '2000-01-02';
+        $this->assertEquals(new DateTime('2000-01-02'), $user->modified);
+        $this->expectException(RuntimeException::class);
+        $user->modified = new DateTime('2000-01-03');
 	}
 
 	public function testSelect() {
@@ -141,19 +152,21 @@ class ModelWithMysqlAdapterTest extends TestCase {
 		$test = new TestModel();
 		$test->name = 'Test';
 		$test->email = 'test@example.com';
+        $test->password = 'password';
 		$test->status = 'Active';
 		$test->save();
-		$this->assertEquals( 'INSERT INTO `user` (`id`, `name`, `email`, `status`, `created`, `modified`) VALUES (?, ?, ?, ?, ?, ?)', self::$adapter->getQuery() );
-		$this->assertEquals( [0, 'Test', 'test@example.com', 'Active', $now, '0000-00-00 00:00:00'], self::$adapter->getParameters() );
+		$this->assertEquals( 'INSERT INTO `user` (`id`, `name`, `email`, `password`, `status`, `created`, `modified`) VALUES (?, ?, ?, ?, ?, ?, ?)', self::$adapter->getQuery() );
+		$this->assertEquals( [0, 'Test', 'test@example.com', '5f4dcc3b5aa765d61d8327deb882cf99', 'Active', $now, '0000-00-00 00:00:00'], self::$adapter->getParameters() );
 		# Update
 		$test = new TestModel();
 		$test->id = 123;
 		$test->name = 'Test';
 		$test->email = 'test@example.com';
+        $test->password = 'password';
 		$test->status = 'Active';
 		$test->save();
-		$this->assertEquals( 'UPDATE `user` SET `name` = ?, `email` = ?, `status` = ?, `modified` = ? WHERE `id` = ?', self::$adapter->getQuery() );
-		$this->assertEquals( ['Test', 'test@example.com', 'Active', $now, 123], self::$adapter->getParameters() );
+		$this->assertEquals( 'UPDATE `user` SET `name` = ?, `email` = ?, `password` = ?, `status` = ?, `modified` = ? WHERE `id` = ?', self::$adapter->getQuery() );
+		$this->assertEquals( ['Test', 'test@example.com', '5f4dcc3b5aa765d61d8327deb882cf99', 'Active', $now, 123], self::$adapter->getParameters() );
 	}
 
 	public function testRefresh() {
@@ -169,7 +182,7 @@ class ModelWithMysqlAdapterTest extends TestCase {
 		$test->id = 123;
 		$test->refresh();
 		$json = json_encode($test);
-		$this->assertEquals('{"id":123,"name":"Test","email":"test@example.com","status":"Active","created":"2022-11-30 15:15:15","modified":"2022-11-30 15:15:15"}', $json);
+		$this->assertEquals('{"id":123,"name":"Test","email":"test@example.com","password":"5f4dcc3b5aa765d61d8327deb882cf99","status":"Active","created":"2022-11-30 15:15:15","modified":"2022-11-30 15:15:15"}', $json);
 	}
 
 	public function testMetamodel() {

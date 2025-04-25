@@ -1,7 +1,7 @@
 {
   "name": "vecode/caldera-orm",
   "description": "Query builder and ORM layer, part of Vecode Caldera",
-  "version": "1.1.2",
+  "version": "1.2.0",
   "type": "library",
   "license": "MIT",
   "authors": [
@@ -15,6 +15,9 @@
     "php": ">=8.1",
     "ext-mbstring": "*",
     "vecode/caldera-database": "^1.0"
+  },
+  "require-dev": {
+    "ext-pdo": "*"
   },
   "autoload": {
     "psr-4": {

@@ -98,6 +98,7 @@ class TestMySQLAdapter extends MySQLAdapter {
 				'id' => 123,
 				'name' => 'Test',
 				'email' => 'test@example.com',
+				'password' => '5f4dcc3b5aa765d61d8327deb882cf99',
 				'status' => 'Active',
 				'created' => '2022-11-30 15:15:15',
 				'modified' => '2022-11-30 15:15:15',
