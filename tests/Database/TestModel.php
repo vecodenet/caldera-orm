@@ -54,6 +54,10 @@ class TestModel extends AbstractMetaModel {
 		'status' => 'Inactive',
 	];
 
+    protected static $mutator_aliases = [
+        'password' => 'passwordEncoder',
+    ];
+
 	protected static $meta_table = 'user_meta';
 
 	protected static $meta_field = 'user_id';

@@ -68,16 +68,21 @@ abstract class AbstractModel implements JsonSerializable {
 	 */
 	protected static $field_updated = 'modified';
 
+    /**
+     * @var array<string, Mutator>
+     */
+    protected static $mutators = [];
+
+    /**
+     * @var array<string, string>
+     */
+    protected static $mutator_aliases = [];
+
 	/**
 	 * Model properties
 	 * @var array
 	 */
 	protected $properties = [];
-
-    /**
-     * @var array<string, Mutator>
-     */
-    protected $mutators = [];
 
 	/**
 	 * Constructor
@@ -554,13 +559,14 @@ abstract class AbstractModel implements JsonSerializable {
      * @return Mutator|null
      */
     protected function checkMutator(string $property): ?Mutator {
-        $mutator = $this->mutators[$property] ?? null;
+        $property = static::$mutator_aliases[$property] ?? $property;
+        $mutator = static::$mutators[$property] ?? null;
         $reflected = new ReflectionClass($this);
         if (!$mutator && $reflected->hasMethod($property) ) {
             $method = $reflected->getMethod($property);
             if ($method->hasReturnType() && $method->getReturnType()->getName() == Mutator::class) {
                 $mutator = call_user_func([$this, $property]); # @phpstan-ignore-line
-                $this->mutators[$property] = $mutator;
+                static::$mutators[$property] = $mutator;
             }
         }
         return $mutator;

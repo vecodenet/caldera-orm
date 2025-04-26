@@ -15,7 +15,7 @@ use Caldera\Database\Model\Mutator;
 
 trait HasPassword {
 
-    protected function password(): Mutator {
+    protected function passwordEncoder(): Mutator {
         return new Mutator(function() {
             return $this->properties['password'];
         }, function(mixed $value) {
