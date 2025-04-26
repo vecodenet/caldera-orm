@@ -14,6 +14,7 @@ namespace Caldera\Database\Model;
 use Closure;
 use JsonSerializable;
 use ReflectionClass;
+use ReflectionNamedType;
 
 use Caldera\Database\Query\Query;
 use Caldera\Database\Query\QueryFactory;
@@ -69,7 +70,7 @@ abstract class AbstractModel implements JsonSerializable {
 	protected static $field_updated = 'modified';
 
     /**
-     * @var array<string, Mutator>
+     * @var array<string, array>
      */
     protected static $mutators = [];
 
@@ -77,6 +78,11 @@ abstract class AbstractModel implements JsonSerializable {
      * @var array<string, string>
      */
     protected static $mutator_aliases = [];
+
+    /**
+     * @var array<string, array>
+     */
+    protected static $reflection_cache = [];
 
 	/**
 	 * Model properties
@@ -515,7 +521,8 @@ abstract class AbstractModel implements JsonSerializable {
 	public function getProperty(string $name, mixed $default = null): mixed {
         $mutator = $this->checkMutator($name);
         if ($mutator) {
-            return $mutator->get();
+            # Pass the property through the mutator and return the result
+            return $mutator->get( $this->properties[$name] );
         }
 		return $this->properties[$name] ?? $default;
 	}
@@ -528,6 +535,7 @@ abstract class AbstractModel implements JsonSerializable {
 	public function setProperty(string $name, mixed $value): void {
         $mutator = $this->checkMutator($name);
         if ($mutator) {
+            # Pass the property through the mutator and save the result
             $this->properties[$name] = $mutator->set($value);
         } else {
 		    $this->properties[$name] = $value;
@@ -559,16 +567,55 @@ abstract class AbstractModel implements JsonSerializable {
      * @return Mutator|null
      */
     protected function checkMutator(string $property): ?Mutator {
+        $class = static::class;
+        if (! isset( static::$mutators[$class] ) ) {
+            # Create the array of mutators for the concrete model class
+            static::$mutators[$class] = [];
+        }
+        # Get mutator alias, if any
         $property = static::$mutator_aliases[$property] ?? $property;
-        $mutator = static::$mutators[$property] ?? null;
-        $reflected = new ReflectionClass($this);
-        if (!$mutator && $reflected->hasMethod($property) ) {
+        # Try to retrieve the mutator from the cache
+        $mutator = static::$mutators[$class][$property] ?? null;
+        # Get a ReflectionClass if there is no cached mutator
+        $reflected = !$mutator ? self::getReflectedClass($this) : null;
+        # If there is no mutator try to get it from the AbstractModel, but avoid properties that have been already checked and  should be ignored
+        if (!$mutator && $reflected && !in_array($property, self::$reflection_cache[$class]['skip']) && $reflected->hasMethod($property)) {
+            # Check if there is a method that matches the property name
             $method = $reflected->getMethod($property);
-            if ($method->hasReturnType() && $method->getReturnType()->getName() == Mutator::class) {
+            $return_type = $method->getReturnType();
+            # Check the return type of the method
+            if ($return_type instanceof ReflectionNamedType && $return_type->getName() == Mutator::class) {
+                # Build the mutator instance and save it to the cache
                 $mutator = call_user_func([$this, $property]); # @phpstan-ignore-line
-                static::$mutators[$property] = $mutator;
+                static::$mutators[$class][$property] = $mutator;
+            } else {
+                # Add the property to the ignore list
+                self::$reflection_cache[$class]['skip'][] = $property;
             }
         }
         return $mutator;
+    }
+
+    /**
+     * Get a ReflectionClass from the cache or create a new one and cache it
+     * @param AbstractModel $model
+     * @return ReflectionClass|null
+     */
+    protected static function getReflectedClass(AbstractModel $model): ?ReflectionClass {
+        $class = get_class($model);
+        # Check the reflection cache
+        $cached = self::$reflection_cache[$class] ?? null;
+        if (!$cached) {
+            # No cached instance, so create a new entry one and cache it
+            $reflected = new ReflectionClass($model);
+            self::$reflection_cache[$class] = [
+                'reflected' => $reflected,
+                'skip' => [],
+            ];
+        } else {
+            # Take the instance from the cached entry
+            $reflected = $cached['reflected'] ?? null;
+        }
+        return $reflected;
     }
 }

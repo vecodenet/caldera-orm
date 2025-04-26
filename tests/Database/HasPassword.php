@@ -15,9 +15,9 @@ use Caldera\Database\Model\Mutator;
 
 trait HasPassword {
 
-    protected function passwordEncoder(): Mutator {
-        return new Mutator(function() {
-            return $this->properties['password'];
+    protected static function passwordEncoder(): Mutator {
+        return new Mutator(function($value) {
+            return $value;
         }, function(mixed $value) {
             # WARNING: THIS IS VERY UNSAFE!! - But we need a consistent result so we can not use password_hash as the result varies each time
             # But again, DON'T USE MD5 FOR PASSWORDS!!!

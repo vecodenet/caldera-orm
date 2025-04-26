@@ -38,16 +38,17 @@ class Mutator {
 
     /**
      * Get value
-     * @param  mixed|null $default Default value
+     * @param mixed      $value   Value to process
+     * @param mixed|null $default Default value
      * @return mixed
      */
-    public function get(mixed $default = null): mixed {
-        return ($this->get)() ?? $default;
+    public function get(mixed $value, mixed $default = null): mixed {
+        return ($this->get)($value) ?? $default;
     }
 
     /**
      * Set value
-     * @param  mixed $value Value to set
+     * @param  mixed $value Value to process
      * @return mixed
      */
     public function set(mixed $value): mixed {
