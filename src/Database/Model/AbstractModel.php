@@ -11,8 +11,9 @@ declare(strict_types = 1);
 
 namespace Caldera\Database\Model;
 
-use JsonSerializable;
 use Closure;
+use JsonSerializable;
+use ReflectionClass;
 
 use Caldera\Database\Query\Query;
 use Caldera\Database\Query\QueryFactory;
@@ -554,9 +555,11 @@ abstract class AbstractModel implements JsonSerializable {
      */
     protected function checkMutator(string $property): ?Mutator {
         $mutator = $this->mutators[$property] ?? null;
-        if (!$mutator && method_exists($this, $property) ) {
-            $mutator = call_user_func([$this, $property]); # @phpstan-ignore-line
-            if ($mutator instanceof Mutator) {
+        $reflected = new ReflectionClass($this);
+        if (!$mutator && $reflected->hasMethod($property) ) {
+            $method = $reflected->getMethod($property);
+            if ($method->hasReturnType() && $method->getReturnType()->getName() == Mutator::class) {
+                $mutator = call_user_func([$this, $property]); # @phpstan-ignore-line
                 $this->mutators[$property] = $mutator;
             }
         }
